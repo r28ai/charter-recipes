@@ -42,3 +42,15 @@ jobs:
             uv run --python ${{ matrix.python-version }} "$recipe" --help > /dev/null
           done
           uv run --python ${{ matrix.python-version }} gmail/send.py you@example.com | grep -q "^To: =?utf-8?q?M=C3=BCller=2C_Jos=C3=A9?="
+
+      # The recipes that need no credentials print fixed numbers. A release that changes one fails here.
+      - name: Offline recipes reproduce their numbers
+        run: |
+          py=${{ matrix.python-version }}
+          uv run --python $py gmail/cut_to_the_job.py | grep -q "\['maxResults', 'q'\]"
+          uv run --python $py stripe/gloss.py | grep -q "15 refunds fifteen cents"
+          uv run --python $py linear/schema_cost.py | grep -Eq "^filter +44,828"
+          uv run --python $py gdocs/edit_text_only.py | grep -q "33 kinds of edit"
+          for recipe in stripe/*.py linear/*.py gdocs/*.py; do
+            test "$(wc -l < "$recipe")" -le 60
+          done
